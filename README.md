@@ -1,9 +1,16 @@
 # static_compress
 
-```
-Usage:
+Tool for precompressing static assets (`.html` -> `.html.gz`). All original files are left intact. 
+Only updates changed files.
 
--d, --dir     Directory to process [required]  
--m, --meta    Where to store metadata
-              (defaults to ".compress_data")
+Installing:
+
+```
+pub global activate static_compress
+```
+
+Running
+
+```
+pub global run static_compress --dir <dir_to_process> [--meta <dir_to_store_meta>]
 ```
