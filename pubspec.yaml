@@ -2,7 +2,7 @@ name: static_compress
 version: 0.1.0
 description: Compressor (gzip, webp) for static assets.
 author: Maxim Dikun <dikmax@gmail.com>
-homepage: https://dikmax.name
+homepage: https://github.com/dikmax/static-compress
 environment:
   sdk: '>=1.0.0 <2.0.0'
 dependencies:
