@@ -31,7 +31,7 @@ class Watcher {
         ".txt": zopfliTransformer,
         ".xml": zopfliTransformer,
 
-        ".eof": zopfliTransformer,
+        ".eot": zopfliTransformer,
         ".svg": zopfliTransformer,
         ".ttf": zopfliTransformer,
         ".woff": zopfliTransformer,
