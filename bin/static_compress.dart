@@ -8,16 +8,29 @@ import 'package:logging/logging.dart';
 
 ArgParser getParser () {
   var result = new ArgParser();
+  result.addFlag("help", abbr: "h", help: "Show help", negatable: false);
   result.addOption("dir", abbr: "d", help: "Directory to process [required]");
   result.addOption("meta", abbr: "m", help: 'Where to store metadata', defaultsTo: ".compress_data");
+  result.addOption("threads", abbr: "t", help: "Threads count", defaultsTo: "4");
   return result;
 }
 
-main(List<String> args) {
+main(List<String> args) async {
   var parser = getParser();
-  var results = parser.parse(args);
+  var results;
+  try {
+    results = parser.parse(args);
+  } catch (e) {
+    if (e is FormatException) {
+      print(e.message);
+    }
+    print("Usage:\n");
+    print(parser.usage);
+    return;
+  }
 
-  if (results['dir'] == null) {
+
+  if (results['dir'] == null || results['help']) {
     print("Usage:\n");
     print(parser.usage);
     return;
@@ -28,6 +41,8 @@ main(List<String> args) {
     print('${rec.level.name}: ${rec.message}');
   });
 
-  Watcher watcher = new Watcher(results['dir'], results['meta']);
-  watcher.process();
+  int threads = int.parse(results['threads'], onError: (_) => 4);
+
+  Watcher watcher = new Watcher(results['dir'], results['meta'], threads);
+  await watcher.process();
 }

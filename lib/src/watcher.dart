@@ -5,8 +5,9 @@ class Watcher {
   Directory dataDirectory;
   Map<String, AbstractTransformer> transformers;
   Map<String, bool> hashes;
+  TasksPool pool;
 
-  Watcher(String _watchDirectory, String _dataDirectory) {
+  Watcher(String _watchDirectory, String _dataDirectory, int threadsCount) {
     watchDirectory = new Directory(absolute(_watchDirectory));
     if (!watchDirectory.existsSync()) {
       throw new Exception("Watch directory not found");
@@ -17,6 +18,8 @@ class Watcher {
     }
 
     hashes = readHashes();
+
+    pool = new TasksPool(this, threadsCount);
 
     transformers = {};
 
@@ -98,7 +101,7 @@ class Watcher {
     return result;
   }
 
-  void process () {
+  Future process () async {
     SODirectory originalSet = readTree(watchDirectory);
     var metadata = new File(join(dataDirectory.path, '.metadata'));
     SODirectory processedSet;
@@ -108,12 +111,13 @@ class Watcher {
     }
 
     compareSets(originalSet, processedSet);
+    await pool.processQueue();
     metadata.writeAsBytesSync(GZIP.encode(UTF8.encode(JSON.encode(originalSet))));
+
     cleanHashes();
 
     Logger.root.info("Unknows extensions: $unknownExtensions");
   }
-
 
   void compareSets(SODirectory original, SODirectory processed) {
     // Check additions and changes
@@ -140,25 +144,6 @@ class Watcher {
     }
     var transformer = transformers[ext];
 
-    Logger.root.info("Process: ${file.path}");
-    var f = new File(file.path);
-    var hash = new SHA256();
-    hash.add(f.readAsBytesSync());
-    var sha256 = hash.close();
-    file.hash = CryptoUtils.bytesToHex(sha256);
-
-    var cacheFile = new File(join(dataDirectory.path, file.hash));
-    var resultFile = new File(transformer.updateName(file.path));
-    if (cacheFile.existsSync()) {
-      if (resultFile.existsSync()) {
-        resultFile.deleteSync();
-      }
-      cacheFile.copySync(resultFile.path);
-    } else {
-      var fileContents = transformer.transform(file);
-      cacheFile.writeAsBytesSync(fileContents);
-      resultFile.writeAsBytesSync(fileContents);
-    }
-    hashes[file.hash] = true;
+    pool.addTask(new Task(file, transformer, dataDirectory));
   }
 }
