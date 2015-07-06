@@ -2,10 +2,9 @@ part of static_compress;
 
 class Task {
   SOFile file;
-  AbstractTransformer transformer;
-  Directory dataDirectory;
+  AbstractMetadataContainer metadataContainer;
 
-  Task(this.file, this.transformer, this.dataDirectory);
+  Task(this.file, this.metadataContainer);
 }
 
 class Log {
@@ -98,8 +97,7 @@ void runTask(SendPort sendPort) {
       return;
     }
     SOFile file = msg.file;
-    AbstractTransformer transformer = msg.transformer;
-    Directory dataDirectory = msg.dataDirectory;
+    AbstractMetadataContainer metadataContainer = msg.metadataContainer;
 
     sendPort.send(new Log("Process: ${file.path}"));
     var f = new File(file.path);
@@ -109,17 +107,9 @@ void runTask(SendPort sendPort) {
     file.hash = CryptoUtils.bytesToHex(sha256);
     sendPort.send(file.hash);
 
-    var cacheFile = new File(join(dataDirectory.path, file.hash));
-    var resultFile = new File(transformer.updateName(file.path));
-    if (cacheFile.existsSync()) {
-      if (resultFile.existsSync()) {
-        resultFile.deleteSync();
-      }
-      cacheFile.copySync(resultFile.path);
-    } else {
-      var fileContents = transformer.transform(file);
-      cacheFile.writeAsBytesSync(fileContents);
-      resultFile.writeAsBytesSync(fileContents);
+    if (!metadataContainer.restoreFromCache(file)) {
+      // Creating new copy
+      metadataContainer.generateFile(file);
     }
 
     sendPort.send(false);

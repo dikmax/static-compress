@@ -12,6 +12,7 @@ import 'package:path/path.dart';
 import 'package:which/which.dart';
 
 part 'src/filesystem.dart';
-part 'src/watcher.dart';
-part 'src/transformers.dart';
 part 'src/isolates.dart';
+part 'src/metadata.dart';
+part 'src/transformers.dart';
+part 'src/watcher.dart';

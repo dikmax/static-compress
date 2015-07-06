@@ -1,7 +1,6 @@
 // Copyright (c) 2015, <your name>. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
 import 'package:static_compress/static_compress.dart';
 import 'package:args/args.dart';
 import 'package:logging/logging.dart';
@@ -43,7 +42,9 @@ main(List<String> args) async {
 
   int threads = int.parse(results['threads'], onError: (_) => 4);
 
-  Watcher watcher = new Watcher(defaultTransformersMapFactory,
-    new TreeReader.fromString(results['dir']), results['meta'], threads);
+  Watcher watcher = new Watcher(
+      new TreeReader.fromString(results['dir']),
+      new MetadataContainer.fromString(results['meta'], defaultTransformersMapFactory),
+      threads);
   await watcher.process();
 }
