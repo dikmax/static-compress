@@ -49,3 +49,42 @@ class WebpTransformer extends AbstractTransformer {
     return name + '.webp';
   }
 }
+
+typedef Map<String, AbstractTransformer> TransformersMapFactory();
+
+Map<String, AbstractTransformer> defaultTransformersMapFactory() {
+  Map<String, AbstractTransformer> result = {};
+
+  try {
+    var zopfliTransformer = new ZopfliTransformer();
+    result.addAll({
+      ".css": zopfliTransformer,
+      ".js": zopfliTransformer,
+      ".json": zopfliTransformer,
+      ".html": zopfliTransformer,
+      ".rss": zopfliTransformer,
+      ".txt": zopfliTransformer,
+      ".xml": zopfliTransformer,
+
+      ".eot": zopfliTransformer,
+      ".svg": zopfliTransformer,
+      ".ttf": zopfliTransformer,
+      ".woff": zopfliTransformer,
+    });
+  } catch(e) {
+    Logger.root.warning(e.message + " Gzip processging will be disabled.");
+  }
+
+  try {
+    var jpegTransformer = new WebpTransformer(false);
+    var pngTransformer = new WebpTransformer(true);
+    result.addAll({
+      ".jpg": jpegTransformer,
+      ".png": pngTransformer
+    });
+  } catch (e) {
+    Logger.root.warning(e.message + " WebP processging will be disabled.");
+  }
+
+  return result;
+}

@@ -1,17 +1,14 @@
 part of static_compress;
 
 class Watcher {
-  Directory watchDirectory;
+  AbstractTreeReader treeReader;
   Directory dataDirectory;
   Map<String, AbstractTransformer> transformers;
   Map<String, bool> hashes;
   TasksPool pool;
 
-  Watcher(String _watchDirectory, String _dataDirectory, int threadsCount) {
-    watchDirectory = new Directory(absolute(_watchDirectory));
-    if (!watchDirectory.existsSync()) {
-      throw new Exception("Watch directory not found");
-    }
+  Watcher(TransformersMapFactory _transformersMapFactory,
+          this.treeReader, String _dataDirectory, int threadsCount) {
     dataDirectory = new Directory(absolute(_dataDirectory));
     if (!dataDirectory.existsSync()) {
       dataDirectory.createSync(recursive: true);
@@ -21,38 +18,7 @@ class Watcher {
 
     pool = new TasksPool(this, threadsCount);
 
-    transformers = {};
-
-    try {
-      var zopfliTransformer = new ZopfliTransformer();
-      transformers.addAll({
-        ".css": zopfliTransformer,
-        ".js": zopfliTransformer,
-        ".json": zopfliTransformer,
-        ".html": zopfliTransformer,
-        ".rss": zopfliTransformer,
-        ".txt": zopfliTransformer,
-        ".xml": zopfliTransformer,
-
-        ".eot": zopfliTransformer,
-        ".svg": zopfliTransformer,
-        ".ttf": zopfliTransformer,
-        ".woff": zopfliTransformer,
-      });
-    } catch(e) {
-      Logger.root.warning(e.message + " Gzip processging will be disabled.");
-    }
-
-    try {
-      var jpegTransformer = new WebpTransformer(false);
-      var pngTransformer = new WebpTransformer(true);
-      transformers.addAll({
-        ".jpg": jpegTransformer,
-        ".png": pngTransformer
-      });
-    } catch (e) {
-      Logger.root.warning(e.message + " WebP processging will be disabled.");
-    }
+    transformers = _transformersMapFactory();
   }
 
   Map<String, bool> readHashes() {
@@ -78,36 +44,16 @@ class Watcher {
 
   Set<String> unknownExtensions = new Set();
 
-  SODirectory readTree(Directory dir) {
-    var result = new SODirectory(dir.path, basename(dir.path));
-
-    var list = dir.listSync();
-    list.forEach((el) {
-      var stat = el.statSync();
-      if (stat.type == FileSystemEntityType.DIRECTORY) {
-        var item = readTree(el as Directory);
-        result.children[item.name] = item;
-      } else if (stat.type == FileSystemEntityType.FILE) {
-        var ext = extension(el.path);
-        if (transformers[ext] == null) {
-          unknownExtensions.add(ext);
-          return;
-        }
-        var item = new SOFile(el.path, basename(el.path), stat.modified, stat.size);
-        result.children[item.name] = item;
-      }
-    });
-
-    return result;
-  }
-
   Future process () async {
-    SODirectory originalSet = readTree(watchDirectory);
+    SODirectory originalSet = treeReader.readTree();
+
     var metadata = new File(join(dataDirectory.path, '.metadata'));
     SODirectory processedSet;
     if (metadata.existsSync()) {
       var json = JSON.decode(UTF8.decode(GZIP.decode(metadata.readAsBytesSync())));
-      processedSet = SOItem.fromJson(dirname(watchDirectory.path), json);
+      //processedSet = SOItem.fromJson(dirname(watchDirectory.path), json);
+      // TODO fix
+      processedSet = SOItem.fromJson("", json);
     }
 
     compareSets(originalSet, processedSet);

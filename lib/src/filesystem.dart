@@ -70,3 +70,53 @@ class SOFile extends SOItem {
 
   bool operator== (obj) => obj is SOFile && obj.name == name && obj.modified == modified && obj.size == size;
 }
+
+
+abstract class AbstractTreeReader {
+  SODirectory readTree();
+}
+
+
+class TreeReader implements AbstractTreeReader {
+
+  Directory dir;
+
+  TreeReader(this.dir);
+  TreeReader.fromString(String _dir) {
+    dir = new Directory(absolute(_dir));
+  }
+
+  @override
+  SODirectory readTree() {
+    if (!dir.existsSync()) {
+      throw new Exception("Watch directory not found");
+    }
+
+    return readTreeLevel(dir);
+  }
+
+  SODirectory readTreeLevel(Directory dir) {
+    var result = new SODirectory(dir.path, basename(dir.path));
+
+    var list = dir.listSync();
+    list.forEach((el) {
+      var stat = el.statSync();
+      if (stat.type == FileSystemEntityType.DIRECTORY) {
+        var item = readTreeLevel(el as Directory);
+        result.children[item.name] = item;
+      } else if (stat.type == FileSystemEntityType.FILE) {
+        /* TODO
+        var ext = extension(el.path);
+        if (transformers[ext] == null) {
+          unknownExtensions.add(ext);
+          return;
+        }
+        */
+        var item = new SOFile(el.path, basename(el.path), stat.modified, stat.size);
+        result.children[item.name] = item;
+      }
+    });
+
+    return result;
+  }
+}

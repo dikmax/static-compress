@@ -43,6 +43,7 @@ main(List<String> args) async {
 
   int threads = int.parse(results['threads'], onError: (_) => 4);
 
-  Watcher watcher = new Watcher(results['dir'], results['meta'], threads);
+  Watcher watcher = new Watcher(defaultTransformersMapFactory,
+    new TreeReader.fromString(results['dir']), results['meta'], threads);
   await watcher.process();
 }
